@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #define TOP 1
 #define BOTTOM 0
@@ -25,6 +26,7 @@ void set_red();
 void set_yellow();
 void set_reset();
 void printColor(int);
+void delay(int);
 void printBoard(board);
 void initBoard(board*);
 int dropPiece(board*, int, int);
@@ -77,12 +79,15 @@ void main()
 			if (row != -1)
 			{
 				printBoard(board);
-				winner = checkWin(&board);
+				winner = gameOver = checkWin(&board); // we can check also gameOver beacuse if there is no win or tie the func will return 0
 
-				if (winner != 0)
+				switch (winner)
 				{
+				case (1 || 2):
 					printf("Player %d wins!\n\n", winner);
-					gameOver = 1;
+					break;
+				case -1:
+					printf("There is a tie\n\n");
 				}
 
 				player = (++player % 2) ? 1 : 2;
@@ -96,7 +101,7 @@ void main()
 		free(board.board);
 		board.free++;
 		printf("your unrealesd mallocs: %d\n\n\n", board.free - board.mallc);
-		printf("would you like to play again? no : yes;\n");
+		printf("would you like to play again? no(0) : yes(1);\n");
 		scanf_s("%d", &run);
 	} while (run);
 }
@@ -135,6 +140,15 @@ void printColor(int player)
 	set_reset();
 }
 
+void delay(int milli_seconds)
+{
+	// Storing start time
+	clock_t start_time = clock();
+
+	// looping till required time is not achieved
+	while (clock() < start_time + milli_seconds);
+}
+
 void printLine(board board, int line_postion)
 {
 	int i;
@@ -158,7 +172,6 @@ void printLine(board board, int line_postion)
 void printBoard(board board)
 {
 	int i, j;
-
 	printf("\n");
 	printLine(board, TOP);
 	for (i = 0; i < board.rows; i++)
@@ -253,60 +266,65 @@ int checkStrightWin(board* board, int line)
 
 int checkDiagonalWin(board* board, int diagonal)
 {
-
 	//This function checks for a diagonal win. It loops through the board and checks if there are 'x' number of the same values in a row. If there are, it returns the value. If not, it returns 0.
 	int i, j, k, count;
-	 // left to right
+	// left to right
+
 	for (i = board->x - 1; i < board->rows; i++) // the starting row should be the x, less then that can not be a possible win
-	{
 		for (j = 0; j < board->cols; j++)
-		{
-			for (count = 1, k = 1; k <= board->x && i - k >= 0 && j + k < board->cols; k++) {
-				if (board->board[i][j] == board->board[i - k][j + k] && board->board[i][j] != 0)
-				{
+			for (count = 1, k = 1; k <= board->x; k++) {
+
+				if (diagonal ? i - k >= 0 && j + k < board->cols : i + k < board->rows && j + k < board->rows) // to long to read on the for condition
+					break; // for example: diagonl = LeftToRight(1), then check the conditon that fits onto that parmter
+
+				if (board->board[i][j] == board->board[diagonal ? i - k: i + k][j + k] && board->board[i][j] != 0)
 					count++;
-				}
 				else
 					break;
+
 				if (count == board->x)
 					return board->board[i][j];
 			}
-		}
-	}
-	// needs to be worken on and then combained toghter with the first part
-	for (i = board->x - 1; i < board->rows; i++) // right to left
-	{
-		for (j = 0; j < board->cols; j++)
-		{
-			for (count = 1, k = 1; k <= board->x && i - k >= 0 && j + k < board->cols; k++) {
-				if (board->board[i][j] == board->board[i - k][j + k] && board->board[i][j] != 0)
-				{
-					count++;
-				}
-				else
-					break;
-				if (count == board->x)
-					return board->board[i][j];
-			}
-		}
-	}
 	return 0;
+}
+
+int checkTie(board* board)
+{
+	int i, j;
+	// run trought all the board, if one of the values is not taken there is no tie
+	for (i = 0; i < board->rows; i++)
+	{
+		for (j = 0; j < board->cols; j++)
+		{
+			if (!board->board[i][j])
+			{
+				return 0;
+			}
+		}
+	}
+	return 1;
 }
 
 int checkWin(board* board)
 {
 	int player = 0;
-
+	// beacuse the check win functions return the winning player, firstly we need to check that someone actully won and then return what player it was.
+	// we can't just return the player with || or that kind of varisoin beacuse then it will return only true or false
 	if (player = (checkStrightWin(board, HORIZONTOl)))
 		return player; // Check for horizontol wins
 	else if (player = (checkStrightWin(board, VERTICAL)))
 		return player; // Check for vertical wins
 	else if (player = (checkDiagonalWin(board, LeftToRight)))
-		return player;
+		return player; // Check for diagnol left to right wins
 	else if (player = (checkDiagonalWin(board, RightToLeft)))
-		return player;
-
-
-	
+		return player; // Check for diagnol right to left wins
+	else if (checkTie(board))
+		return -1;
+	/*
+	chart for returned values:
+		-1 - a tie
+		0 - no win and not tie
+		1 - win
+	*/
 	return 0;
 }
