@@ -21,36 +21,37 @@ typedef struct board
 	int mallc, free;
 } board;
 
-void defineBoard(board* board);
-void initBoard(board* board);
-void printLine(board board, int line_postion);
+void defineBoard(board*);
+void initBoard(board*);
+void printLine(board, int);
 void set_red();
 void set_yellow();
 void set_reset();
-void printColor(int player);
-void printBoard(board board);
-void startupBoard(board* board);
-void delay(int milli_seconds);
-int dropPiece(board* board, int col, int player);
-int whichBigger(int height, int colms);
-int countCheck(board* board, int count, int* player, int i, int j);
-int checkStrightWin(board* board, int line);
-int checkDiagonalWin(board* board, int diagonal);
-int earlyTieCondition(board* board, int i, int j);
-int checkTie(board* board);
-int checkWin(board* board);
-void freeBoard(board* board);
-void play(board* board);
+void printColor(int);
+void printBoard(board);
+void startupBoard(board*);
+void delay(int);
+int dropPiece(board*, int, int);
+int whichBigger(int, int);
+int countCheck(board*, int, int*, int, int);
+int checkStrightWin(board*, int);
+int checkDiagonalWin(board*, int);
+int roundUpHalf(int);
+int earlyTieCondition(board*, int, int, int);
+int checkTie(board*);
+int checkWin(board*);
+void freeBoard(board*);
+void play(board*);
 int keepPlaying();
 
 void main()
 {
 	board board = { 0, 0, NULL, 0, 0 };
 
-	do
-	{
+	do {
 		play(&board);
 	} while (keepPlaying());
+	printf("GoodyBye.");
 
 
 }
@@ -272,37 +273,50 @@ int checkDiagonalWin(board* board, int diagonal)
 	return 0;
 }
 
-int earlyTieCondition(board* board, int i, int j)
+int earlyTieCondition(board* board, int i, int j, int k)
 {
-	if ((i - 1 >= 0) || (i + 1 < board->rows)) // if up or down is out of borders then there is no need to check. same applied to every other condition
-		if ((board->board[i - 1][j] == board->board[i][j] || board->board[i - 1][j] == 0) && (board->board[i + 1][j] == board->board[i][j] || board->board[i - 1][j] == 0)) // check up and down
+	
+	if ((i - k >= 0) && (i + k < board->rows)) // if up or down is out of borders then there is no need to check. same applied to every other condition
+		if ((board->board[i - k][j] == board->board[i][j] || board->board[i - k][j] == 0) && (board->board[i + k][j] == board->board[i][j] || board->board[i + k][j] == 0)) // check up and down
 			return 0;
 
-	if ((j - 1 >= 0) || (j + 1 < board->cols))
-		if ((board->board[i][j - 1] == board->board[i][j] || board->board[i - 1][j] == 0) && (board->board[i + 1][j] == board->board[i][j] || board->board[i - 1][j] == 0)) // check right and left
+	if ((j - k >= 0) && (j + k < board->cols))
+		if ((board->board[i][j - k] == board->board[i][j] || board->board[i][j - k] == 0) && (board->board[i][j + k] == board->board[i][j] || board->board[i][j + k] == 0)) // check right and left
 			return 0;
 
-	if (((i - 1 >= 0) && (j - 1 >= 0)) && ((i + 1 < board->rows) && (j + 1 < board->cols)))
-		if ((board->board[i - 1][j - 1] == board->board[i][j] || board->board[i - 1][j - 1] == 0) && (board->board[i + 1][j + 1] == board->board[i][j] || board->board[i + 1][j + 1] == 0)) // check diagnol left to right (\) 
+	if (((i - k >= 0) && (j - k >= 0)) && ((i + k < board->rows) && (j + k < board->cols)))
+		if ((board->board[i - k][j - k] == board->board[i][j] || board->board[i - k][j - k] == 0) && (board->board[i + k][j + k] == board->board[i][j] || board->board[i + k][j + k] == 0)) // check diagnol left to right (\) 
 			return 0;
 
-	if (((i + 1 < board->rows) && (j - 1 >= 0)) && ((i - 1 >= 0) && (j + 1 < board->cols)))
-		if ((board->board[i + 1][j - 1] == board->board[i][j] || board->board[i + 1][j - 1] == 0) && (board->board[i - 1][j + 1] == board->board[i][j] || board->board[i - 1][j + 1] == 0)) // check diagnol right to left (/) 
+	if (((i + k < board->rows) && (j - k >= 0)) && ((i - k >= 0) && (j + k < board->cols)))
+		if ((board->board[i + k][j - k] == board->board[i][j] || board->board[i + k][j - k] == 0) && (board->board[i - k][j + k] == board->board[i][j] || board->board[i - k][j + k] == 0)) // check diagnol right to left (/) 
 			return 0;
 
 	return 1; // if it reached here then there is no place to win at these location but it does not mean there is a tie
 }
 
+int roundUpHalf(int num)
+{
+	if (num % 2 == 0)
+		return num / 2;
+	else
+		return num / 2 + 1;
+}
+
 int checkTie(board* board)
 {
-	int i, j, flag;
-	for (i = 0, flag = 0; i < board->rows; i++) {
+	int i, j, k, count;
+
+	for (i = 0; i < board->rows; i++) {
 		for (j = 0; j < board->cols; j++) {
 
 			if ((i == 0 || i == board->rows - 1) && (j == 0 || j == board->cols - 1)) // dont need to check corners
 				continue;
 
-			if (!(flag = earlyTieCondition(board, i, j))) // if the function returned zero then there is no need to check the others beacuese there is still a option to win
+			for (k = 0, count = 0; k < roundUpHalf(board->x); k++)
+				count += earlyTieCondition(board, i, j, k);
+
+			if (!count) // if count is zero then the tie check was finished and there is still a option to win
 				return 0;
 		}
 	}
@@ -345,6 +359,9 @@ void freeBoard(board* board)
 	free(board->board);
 	board->free++;
 	printf("mallocs: %d, free: %d\n\n\n", board->mallc, board->free);
+	//reset the status
+	board->mallc = 0;
+	board->free = 0;
 }
 
 void play(board* board)

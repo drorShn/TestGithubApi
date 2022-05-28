@@ -35,10 +35,11 @@ void main()
                     return 0;
         } 
     }
+    freeBoard(board);
     return 1;
 
     
-    freeBoard(board);
+    
 }
 
 void initBoard(int** board)
